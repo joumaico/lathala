@@ -1,0 +1,8 @@
+Flask
+google-genai
+httpx
+jsonfinder
+playwright
+python-dotenv
+rich
+supabase

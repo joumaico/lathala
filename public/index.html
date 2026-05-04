@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Basic document metadata. -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- App icon and external styles. -->
+    <link rel="icon" href="static/images/logo/lathala.webp" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="static/css/styles.css" />
+
+    <!-- Time formatting helper used by app.js. -->
+    <script src="https://cdn.jsdelivr.net/npm/timeago.js/dist/timeago.min.js"></script>
+
+    <title>Lathala</title>
+  </head>
+  <body>
+    <!-- Wide-viewport fallback. app.js removes this node below 500px and restores it at 500px or wider. -->
+    <div id="mask">
+      <div class="title">
+        <i class="fa-solid fa-mobile-screen"></i>
+        <span>Mobile Only</span>
+      </div>
+      <p>This website works only on mobile devices.</p>
+    </div>
+
+    <!-- Mobile app shell. app.js removes this node when the viewport is 500px or wider. -->
+    <div id="app" class="is-booting">
+      <!-- Initial loading screen shown while resources, API data, and image preloading start. -->
+      <div class="app-loader" id="app-loader" role="status" aria-live="polite" aria-label="Loading Lathala">
+        <div class="app-loader__brand">LATHALA</div>
+        <div class="app-loader__spinner" aria-hidden="true"></div>
+      </div>
+
+      <!-- Top app bar. -->
+      <header class="top-bar">
+        <div class="top-bar__spacer"></div>
+        <span>LATHALA</span>
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Open categories">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </header>
+
+      <!-- Category drawer and overlay. -->
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Categories</span>
+          <button class="sidebar-close" id="sidebar-close" aria-label="Close categories">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="sidebar-tags" id="sidebar-tags"></div>
+        <div class="sidebar-footer">
+          <span id="copyright-text">© <span id="copyright-year"></span> Lathala.</span>
+        </div>
+      </aside>
+
+      <!-- Article cards are generated here by app.js. -->
+      <main class="feed" id="feed"></main>
+
+      <!-- The read button is hidden while loading or when no readable article exists. -->
+      <nav class="bottom-nav is-hidden" aria-hidden="true">
+        <a href="#" target="_blank" rel="noopener noreferrer" class="nav-btn" id="read-article-link" aria-disabled="true">
+          <i class="fa-brands fa-readme"></i>
+          <span>READ ARTICLE</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main app logic. Loaded as classic scripts so the site works as static files. -->
+    <script src="static/js/config.js"></script>
+    <script src="static/js/utils.js"></script>
+    <script src="static/js/store.js"></script>
+    <script src="static/js/repository.js"></script>
+    <script src="static/js/viewport.js"></script>
+    <script src="static/js/components/loader.js"></script>
+    <script src="static/js/components/button.js"></script>
+    <script src="static/js/components/sidebar.js"></script>
+    <script src="static/js/components/chrome.js"></script>
+    <script src="static/js/components/carousel.js"></script>
+    <script src="static/js/components/card.js"></script>
+    <script src="static/js/components/stack.js"></script>
+    <script src="static/js/components/feed.js"></script>
+    <script src="static/js/components/pull_refresh.js"></script>
+    <script src="static/js/components/app.js"></script>
+    <script src="static/js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/static/images/lathala.webp" />
+    <title>Dashboard | Lathala</title>
+    <link rel="stylesheet" href="/static/control/control.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="grid">
+        <article class="panel span-6">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Runtime config</p>
+              <h2>Editable app settings</h2>
+            </div>
+            <button id="settings-save" class="btn compact" type="button">Save</button>
+          </div>
+          <form id="settings-form" class="settings-grid"></form>
+        </article>
+
+        <article class="panel span-6">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Pipeline</p>
+              <h2>Run database workflow</h2>
+            </div>
+            <button id="run-cancel" class="btn danger compact hidden" type="button">Cancel</button>
+          </div>
+          <div class="run-grid">
+            <button data-run="collect" class="run-card">
+              <span>01</span>
+              <strong>Collect links</strong>
+              <small>Scrape saved sources and store unique article URLs.</small>
+            </button>
+            <button data-run="summarize" class="run-card">
+              <span>02</span>
+              <strong>Summarize batch</strong>
+              <small>Scrape pending articles and save typed summary columns.</small>
+            </button>
+            <button data-run="full" class="run-card accent">
+              <span>03</span>
+              <strong>Run full workflow</strong>
+              <small>Clean pending rows, collect links, then summarize.</small>
+            </button>
+          </div>
+          <pre id="run-output" class="output tiny">Ready.</pre>
+        </article>
+
+        <article class="panel span-6">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Source test</p>
+              <h2>Extract links interactively</h2>
+            </div>
+            <button id="source-test" class="btn compact">Test source</button>
+          </div>
+          <label class="field wide">
+            <span>Source URL</span>
+            <input id="source-url" placeholder="https://www.abs-cbn.com/lifestyle" />
+          </label>
+          <div id="source-links" class="link-list empty">No extracted links yet.</div>
+        </article>
+
+        <article class="panel span-6">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Article test</p>
+              <h2>Generate JSON preview</h2>
+            </div>
+            <button id="article-test" class="btn compact">Test article</button>
+          </div>
+          <label class="field wide">
+            <span>Article URL</span>
+            <input id="article-url" placeholder="https://example.com/news/story" />
+          </label>
+          <pre id="article-output" class="output">No article JSON yet.</pre>
+        </article>
+
+        <article class="panel span-12">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Publishers</p>
+              <h2>Manage publisher names and source links</h2>
+            </div>
+            <button id="publisher-new" class="btn compact">New publisher</button>
+          </div>
+
+          <form id="publisher-form" class="publisher-form hidden">
+            <input type="hidden" id="publisher-id" />
+            <label class="field">
+              <span>Publisher name</span>
+              <input id="publisher-name" placeholder="ABS-CBN News" required />
+            </label>
+            <label class="field">
+              <span>Root domain</span>
+              <input id="publisher-domain" placeholder="abs-cbn.com" />
+            </label>
+            <label class="field wide">
+              <span>Source links, one per line</span>
+              <textarea id="publisher-sources" rows="5" placeholder="https://www.abs-cbn.com/lifestyle&#10;https://www.abs-cbn.com/entertainment"></textarea>
+            </label>
+            <div class="form-actions">
+              <button id="publisher-save" class="btn primary" type="submit">Save publisher</button>
+              <button id="publisher-cancel" class="btn ghost" type="button">Cancel</button>
+            </div>
+          </form>
+
+          <div id="publisher-list" class="publisher-list"></div>
+        </article>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/static/control/control.js"></script>
+  </body>
+</html>
