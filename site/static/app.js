@@ -298,7 +298,7 @@ function buildCard(article, idx) {
     <div class="card__image" style="background-image:url(&quot;${image}&quot;)">
       <div class="card__publisher">
         <div class="card__publisher-left">
-          <div class="card__logo" style="background-image:url(&quot;${publisherLogo}&quot;)"></div>
+          <div class="card__logo" style="background-image:url(&quot;https://ruludjzcqacclehqkppk.supabase.co/storage/v1/object/public/lathala/images/sources/${article.publisher.id}.webp&quot;)"></div>
           <div class="card__meta">
             <span class="card__pub-name">${escapeHtml(article.publisher.name)}</span>
             <span class="card__pub-date">${escapeHtml(formatDateForDisplay(article.date))}</span>
