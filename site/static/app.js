@@ -1,21 +1,25 @@
-/* =============================================================
-   LATHALA — Feed App
-   Architecture:
-   - Cards use `position: absolute; inset: 0` → they fill .feed
-   - ALL animation is done via transform only (translate3d + scale)
-   - No top/left manipulation ever — transform-origin is center
-   - applyStack() is the single source of truth for card state
-============================================================= */
+/* ── SUPABASE CONFIG ───────────────────────────────────────
+   Use your public anon key here. Do NOT put your service role key
+   in frontend code.
+──────────────────────────────────────────────────────────── */
+const SUPABASE_URL = "https://ruludjzcqacclehqkppk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_9ZW1kHjsWy4vkHIYvEd6Mg_vG_hpFnc";
+const ARTICLE_LIMIT = 1000;
+const DEFAULT_IMAGE = "static/images/logo.png";
+const DEFAULT_PUBLISHER_LOGO = "static/images/logo.png";
+const FIXED_CATEGORIES = ["Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
 
-/* ── DATA ────────────────────────────────────────────────── */
-const articles = [
+/* ── FALLBACK DATA ─────────────────────────────────────────
+   This keeps the app usable while the Supabase anon key is not set.
+──────────────────────────────────────────────────────────── */
+const FALLBACK_ARTICLES = [
   {
     image: "static/images/image-1.jpg",
     title: "Patients Face Predatory Medical Credit Card Practices",
     tag: "Business",
     url: "https://google.com",
     bullets: ["High-interest medical credit traps patients in long debt cycles.", "Hidden fees compound the burden well beyond the original bill.", "Many patients sign agreements without understanding full terms.", "Advocates push for stronger federal consumer protections now."],
-    date: "May 2, 2026",
+    date: "2026-05-02",
     publisher: { name: "Inquirer.net", logo: "static/images/logo.png" },
   },
   {
@@ -24,7 +28,7 @@ const articles = [
     tag: "Technology",
     url: "https://google.com",
     bullets: ["Automation is steadily replacing routine office-based tasks.", "Collaboration tools now ship with built-in AI co-pilots.", "Companies are shrinking headquarters footprints worldwide.", "Workers in all sectors must reskill to remain competitive."],
-    date: "May 1, 2026",
+    date: "2026-05-01",
     publisher: { name: "Manila Bulletin", logo: "static/images/logo.png" },
   },
   {
@@ -33,26 +37,8 @@ const articles = [
     tag: "Health",
     url: "https://google.com",
     bullets: ["Rising seas now threaten entire island communities daily.", "Governments have launched funded mass-relocation programs.", "Cultural identity is deeply at risk from forced displacement.", "International aid pledges still fall short of what is needed."],
-    date: "Apr 30, 2026",
+    date: "2026-04-30",
     publisher: { name: "GMA News", logo: "static/images/logo.png" },
-  },
-  {
-    image: "static/images/image-4.jpg",
-    title: "Global Food Prices Hit Record High This Quarter",
-    tag: "Business",
-    url: "https://google.com",
-    bullets: ["Supply chain disruptions are driving costs to record levels.", "Wheat and rice exports remain severely and dangerously disrupted.", "Low-income nations are bearing the heaviest financial toll.", "Emergency food reserves are depleted in at least 12 countries."],
-    date: "Apr 29, 2026",
-    publisher: { name: "Reuters", logo: "static/images/logo.png" },
-  },
-  {
-    image: "static/images/image-5.jpg",
-    title: "Scientists Discover New Antibiotic After 30-Year Gap",
-    tag: "Health",
-    url: "https://google.com",
-    bullets: ["The new compound specifically targets drug-resistant bacteria.", "It was derived from microorganisms found in deep-sea sediments.", "Researchers say it could combat superbugs threatening millions.", "Phase-one clinical trials are scheduled to begin next quarter."],
-    date: "Apr 28, 2026",
-    publisher: { name: "BBC News", logo: "static/images/logo.png" },
   },
 ];
 
@@ -62,15 +48,166 @@ const RESISTANCE = 0.07;
 const FLY_MS = 260;
 
 /* ── STATE ───────────────────────────────────────────────── */
+let allArticles = [];
+let articles = [];
 let activeIndex = 0;
 let cards = [];
 let rafId = null;
 let activeTag = null;
+let isLoading = false;
+let loadError = null;
 const attached = new WeakSet();
 
 /* ── HELPERS ─────────────────────────────────────────────── */
-function getFilteredArticles() {
-  return activeTag ? articles.filter((a) => a.tag === activeTag) : articles;
+function hasSupabaseKey() {
+  return SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("PASTE_YOUR_SUPABASE_ANON_KEY_HERE");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeUrl(value, fallback = "") {
+  if (!value) return fallback;
+
+  try {
+    const url = new URL(String(value), window.location.href);
+    if (["http:", "https:"].includes(url.protocol)) return url.href;
+  } catch (_) {
+    // Fall through to relative URL handling below.
+  }
+
+  const text = String(value);
+  if (text.startsWith("static/") || text.startsWith("./") || text.startsWith("/")) return text;
+  return fallback;
+}
+
+function getPublisherName(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch (_) {
+    return "Lathala";
+  }
+}
+
+function formatDateForDisplay(value) {
+  if (!value) return "";
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function normalizeRpcRow(row) {
+  if (row && typeof row === "object" && "get_articles_by_tag" in row) {
+    return row.get_articles_by_tag;
+  }
+  return row;
+}
+
+function normalizeArticle(row) {
+  const item = normalizeRpcRow(row) ?? {};
+  const url = safeUrl(item.url, "#");
+  const publisher = item.publisher && typeof item.publisher === "object" ? item.publisher : {};
+  const bullets = Array.isArray(item.bullets) ? item.bullets.map((b) => String(b)).filter(Boolean) : [];
+
+  return {
+    url,
+    tag: String(item.tag || "Uncategorized"),
+    date: String(item.date || ""),
+    image: safeUrl(item.image, DEFAULT_IMAGE),
+    title: String(item.title || "Untitled Article"),
+    bullets: bullets.length ? bullets : ["No summary bullets are available for this article yet."],
+    publisher: {
+      id: publisher.id ?? item.publisher_id ?? null,
+      name: String(publisher.name || item.publisher_name || getPublisherName(url)),
+      url: safeUrl(publisher.url || item.publisher_url, "#"),
+      logo: safeUrl(publisher.logo || item.publisher_logo, DEFAULT_PUBLISHER_LOGO),
+    },
+  };
+}
+
+function normalizeArticles(rows) {
+  return (Array.isArray(rows) ? rows : []).map(normalizeArticle).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+function getCountForTag(tag) {
+  return allArticles.filter((a) => a.tag === tag).length;
+}
+
+async function fetchArticlesByTag(tag) {
+  if (!hasSupabaseKey()) {
+    console.warn("Supabase anon key is not set. Using fallback articles.");
+    const fallback = normalizeArticles(FALLBACK_ARTICLES);
+    return tag ? fallback.filter((a) => a.tag === tag) : fallback;
+  }
+
+  const params = new URLSearchParams({
+    p_limit: String(ARTICLE_LIMIT),
+  });
+
+  // No tag means fetch all articles from all tags.
+  if (tag && String(tag).trim()) {
+    params.set("tag", tag);
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_articles_by_tag?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(`Supabase request failed (${response.status}): ${message}`);
+  }
+
+  return normalizeArticles(await response.json());
+}
+
+async function loadArticles(tag = null) {
+  isLoading = true;
+  loadError = null;
+  renderFeedState("Loading articles…");
+  updateSidebarDisabledState(true);
+
+  try {
+    const loaded = await fetchArticlesByTag(tag);
+    articles = loaded;
+
+    if (tag === null) {
+      allArticles = loaded;
+    } else if (!allArticles.length) {
+      allArticles = normalizeArticles(FALLBACK_ARTICLES);
+    }
+  } catch (error) {
+    console.error(error);
+    loadError = error.message;
+
+    if (!allArticles.length) {
+      allArticles = normalizeArticles(FALLBACK_ARTICLES);
+    }
+
+    articles = tag ? allArticles.filter((a) => a.tag === tag) : allArticles;
+  } finally {
+    isLoading = false;
+    rebuildFeed();
+    renderSidebarTags();
+    updateSidebarDisabledState(false);
+  }
 }
 
 /* ── BOOT ────────────────────────────────────────────────── */
@@ -82,12 +219,6 @@ function init() {
   bar.innerHTML = `<div class="feed-progress__fill" id="progress-fill"></div>`;
   feed.appendChild(bar);
 
-  getFilteredArticles().forEach((a, i) => {
-    const el = buildCard(a, i);
-    feed.appendChild(el);
-    cards.push(el);
-  });
-
   const hint = document.createElement("div");
   hint.className = "swipe-hint";
   hint.innerHTML = `
@@ -98,20 +229,32 @@ function init() {
   `;
   feed.appendChild(hint);
 
-  applyStack(true);
-  updateProgress();
   initSidebar();
+  loadArticles(null);
 }
 
-/* ── REBUILD FEED (after filter) ─────────────────────────── */
+/* ── REBUILD FEED (after fetch/filter) ───────────────────── */
 function rebuildFeed() {
   const feed = document.getElementById("feed");
   cards.forEach((c) => c.remove());
   cards = [];
   activeIndex = 0;
 
-  const filtered = getFilteredArticles();
-  filtered.forEach((a, i) => {
+  hideFeedState();
+
+  if (loadError) {
+    renderFeedState("Could not load live articles. Showing cached fallback articles.");
+  }
+
+  if (!articles.length) {
+    renderFeedState(activeTag ? `NOTHING` : "NOTHING");
+    applyStack(true);
+    updateProgress();
+    updateReadLink();
+    return;
+  }
+
+  articles.forEach((a, i) => {
     const el = buildCard(a, i);
     feed.appendChild(el);
     cards.push(el);
@@ -119,6 +262,26 @@ function rebuildFeed() {
 
   applyStack(true);
   updateProgress();
+  updateReadLink();
+}
+
+function renderFeedState(message) {
+  const feed = document.getElementById("feed");
+  let state = document.getElementById("feed-state");
+
+  if (!state) {
+    state = document.createElement("div");
+    state.id = "feed-state";
+    state.className = "feed-state";
+    feed.appendChild(state);
+  }
+
+  state.textContent = message;
+}
+
+function hideFeedState() {
+  const state = document.getElementById("feed-state");
+  if (state) state.remove();
 }
 
 /* ── BUILD CARD ─────────────────────────────────────────── */
@@ -128,23 +291,25 @@ function buildCard(article, idx) {
   el.dataset.idx = idx;
 
   const bulletCount = article.bullets.length;
+  const image = safeUrl(article.image, DEFAULT_IMAGE).replace(/"/g, "%22");
+  const publisherLogo = safeUrl(article.publisher.logo, DEFAULT_PUBLISHER_LOGO).replace(/"/g, "%22");
 
   el.innerHTML = `
-    <div class="card__image" style="background-image:url('${article.image}')">
+    <div class="card__image" style="background-image:url(&quot;${image}&quot;)">
       <div class="card__publisher">
         <div class="card__publisher-left">
-          <div class="card__logo" style="background-image:url('${article.publisher.logo}')"></div>
+          <div class="card__logo" style="background-image:url(&quot;${publisherLogo}&quot;)"></div>
           <div class="card__meta">
-            <span class="card__pub-name">${article.publisher.name}</span>
-            <span class="card__pub-date">${article.date}</span>
+            <span class="card__pub-name">${escapeHtml(article.publisher.name)}</span>
+            <span class="card__pub-date">${escapeHtml(formatDateForDisplay(article.date))}</span>
           </div>
         </div>
-        <div class="card__tag">${article.tag}</div>
+        <div class="card__tag">${escapeHtml(article.tag)}</div>
       </div>
     </div>
 
     <div class="card__content">
-      <h2 class="card__title">${article.title}</h2>
+      <h2 class="card__title">${escapeHtml(article.title)}</h2>
       <div class="card__divider"></div>
       <div class="carousel">
         <div class="carousel__dot-track">
@@ -153,9 +318,9 @@ function buildCard(article, idx) {
         <div class="carousel__track">
           ${article.bullets
             .map(
-              (b, i) => `
+              (b) => `
             <div class="carousel__item">
-              <p class="carousel__text">${b}</p>
+              <p class="carousel__text">${escapeHtml(b)}</p>
             </div>
           `,
             )
@@ -238,6 +403,8 @@ function applyStack(instant = false) {
 
     if (offset === 0) attachDrag(card);
   });
+
+  updateReadLink();
 }
 
 function setCardStyle(el, transform, opacity, zIndex, pointerEvents) {
@@ -395,6 +562,7 @@ function flyOff(card, dir) {
   }
 
   updateProgress();
+  updateReadLink();
   setTimeout(() => applyStack(), FLY_MS + 30);
 }
 
@@ -428,32 +596,54 @@ function updateProgress() {
   }
 }
 
-/* ── SIDEBAR ─────────────────────────────────────────────── */
-const FIXED_CATEGORIES = ["Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
+/* ── READ ARTICLE LINK ──────────────────────────────────── */
+function updateReadLink() {
+  const link = document.getElementById("read-article-link");
+  if (!link) return;
 
+  const article = articles[activeIndex];
+  const url = article ? safeUrl(article.url, "#") : "#";
+  link.href = url;
+  link.classList.toggle("disabled", !article || url === "#");
+  link.setAttribute("aria-disabled", !article || url === "#" ? "true" : "false");
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
 function initSidebar() {
+  renderSidebarTags();
+  document.getElementById("hamburger-btn").addEventListener("click", openSidebar);
+  document.getElementById("sidebar-close").addEventListener("click", closeSidebar);
+  document.getElementById("sidebar-overlay").addEventListener("click", closeSidebar);
+}
+
+function renderSidebarTags() {
   const container = document.getElementById("sidebar-tags");
+  container.innerHTML = "";
 
   const allBtn = document.createElement("button");
   allBtn.className = "sidebar-tag-btn" + (activeTag === null ? " active" : "");
-  allBtn.innerHTML = `<span>All</span><span class="sidebar-tag-count">${articles.length}</span>`;
+  allBtn.innerHTML = `<span>All</span><span class="sidebar-tag-count">${allArticles.length || articles.length}</span>`;
   allBtn.dataset.tag = "";
+  allBtn.disabled = isLoading;
   allBtn.addEventListener("click", () => filterByTag(null));
   container.appendChild(allBtn);
 
   FIXED_CATEGORIES.forEach((tag) => {
-    const count = articles.filter((a) => a.tag === tag).length;
+    const count = getCountForTag(tag);
     const btn = document.createElement("button");
     btn.className = "sidebar-tag-btn" + (activeTag === tag ? " active" : "");
     btn.dataset.tag = tag;
-    btn.innerHTML = `<span>${tag}</span><span class="sidebar-tag-count">${count}</span>`;
+    btn.disabled = isLoading;
+    btn.innerHTML = `<span>${escapeHtml(tag)}</span><span class="sidebar-tag-count">${count}</span>`;
     btn.addEventListener("click", () => filterByTag(tag));
     container.appendChild(btn);
   });
+}
 
-  document.getElementById("hamburger-btn").addEventListener("click", openSidebar);
-  document.getElementById("sidebar-close").addEventListener("click", closeSidebar);
-  document.getElementById("sidebar-overlay").addEventListener("click", closeSidebar);
+function updateSidebarDisabledState(disabled) {
+  document.querySelectorAll(".sidebar-tag-btn").forEach((btn) => {
+    btn.disabled = disabled;
+  });
 }
 
 function openSidebar() {
@@ -466,16 +656,24 @@ function closeSidebar() {
   document.getElementById("sidebar-overlay").classList.remove("open");
 }
 
-function filterByTag(tag) {
+async function filterByTag(tag) {
+  if (isLoading || activeTag === tag) {
+    closeSidebar();
+    return;
+  }
+
   activeTag = tag;
-
-  document.querySelectorAll(".sidebar-tag-btn").forEach((btn) => {
-    const match = tag === null ? btn.dataset.tag === "" : btn.dataset.tag === tag;
-    btn.classList.toggle("active", match);
-  });
-
-  rebuildFeed();
+  renderSidebarTags();
   closeSidebar();
+
+  if (tag === null && allArticles.length) {
+    articles = allArticles;
+    rebuildFeed();
+    renderSidebarTags();
+    return;
+  }
+
+  await loadArticles(tag);
 }
 
 /* ── GO ──────────────────────────────────────────────────── */
