@@ -6,6 +6,7 @@
 -- select * from public.get_articles_by_tag();
 -- select * from public.get_articles_by_tag('All');
 -- select * from public.get_articles_by_tag('Business');
+
 create or replace function public.get_domain_name(raw_url text)
 returns text
 language sql
@@ -60,7 +61,15 @@ drop function if exists public.get_articles_by_tag(text, integer);
 
 
 -- If tag is omitted, null, empty, or "All", this returns all articles
--- from today's UTC+8 date only.
+-- from today's Philippine date only.
+--
+-- Important:
+-- The JSON date is stored in UTC format, for example:
+--   2026-05-05T15:48:45Z
+--
+-- This function does not change the output date.
+-- It only converts today's Philippine date range into UTC for filtering.
+--
 -- Results are shuffled on every call.
 create or replace function public.get_articles_by_tag(
   tag text default null
@@ -69,8 +78,27 @@ returns setof jsonb
 language sql
 volatile
 as $$
-  with current_date_utc8 as (
-    select (now() at time zone 'Asia/Manila')::date as value
+  with ph_today_bounds as (
+    select
+      to_char(
+        (
+          (
+            ((now() at time zone 'Asia/Manila')::date)::timestamp
+            at time zone 'Asia/Manila'
+          ) at time zone 'UTC'
+        ),
+        'YYYY-MM-DD"T"HH24:MI:SS"Z"'
+      ) as start_utc,
+
+      to_char(
+        (
+          (
+            (((now() at time zone 'Asia/Manila')::date + 1)::timestamp)
+            at time zone 'Asia/Manila'
+          ) at time zone 'UTC'
+        ),
+        'YYYY-MM-DD"T"HH24:MI:SS"Z"'
+      ) as end_utc
   ),
   source_domains as (
     select
@@ -100,19 +128,20 @@ as $$
       )
     end
   from public.articles as a
-  cross join current_date_utc8 as d
+  cross join ph_today_bounds as b
   left join source_domains as s
     on s.domain_name = public.get_domain_name(a.url)
    and s.source_rank = 1
   where
-    a.data ->> 'date' = d.value::text
+    a.data ->> 'date' >= b.start_utc
+    and a.data ->> 'date' < b.end_utc
     and (
       tag is null
       or btrim(tag) = ''
-      or lower(tag) = 'all'
+      or lower(btrim(tag)) = 'all'
       or a.data ->> 'tag' = tag
     )
-  order by random();
+  order by (a.data ->> 'date') desc;
 $$;
 
 

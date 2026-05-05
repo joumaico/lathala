@@ -6,7 +6,7 @@ const SUPABASE_URL = "https://ruludjzcqacclehqkppk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_9ZW1kHjsWy4vkHIYvEd6Mg_vG_hpFnc";
 const DEFAULT_IMAGE = "static/images/default.png";
 const DEFAULT_PUBLISHER_LOGO = "static/images/logo.png";
-const FIXED_CATEGORIES = ["Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
+const FIXED_CATEGORIES = ["World", "National", "Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
 
 /* ── FALLBACK DATA ─────────────────────────────────────────
    This keeps the app usable while the Supabase anon key is not set.
@@ -15,28 +15,31 @@ const FALLBACK_ARTICLES = [
   {
     image: "static/images/image-1.jpg",
     title: "Patients Face Predatory Medical Credit Card Practices",
+    author: "Mary Grace Piattos",
     tag: "Business",
     url: "https://google.com",
     bullets: ["High-interest medical credit traps patients in long debt cycles.", "Hidden fees compound the burden well beyond the original bill.", "Many patients sign agreements without understanding full terms.", "Advocates push for stronger federal consumer protections now."],
-    date: "2026-05-02",
+    date: "2026-05-05T14:48:45Z",
     publisher: { name: "Inquirer.net", logo: "static/images/logo.png" },
   },
   {
     image: "static/images/image-2.jpg",
     title: "AI Reshapes the Future of Remote Work Globally",
+    author: "Xiaomi Ocho",
     tag: "Technology",
     url: "https://google.com",
     bullets: ["Automation is steadily replacing routine office-based tasks.", "Collaboration tools now ship with built-in AI co-pilots.", "Companies are shrinking headquarters footprints worldwide.", "Workers in all sectors must reskill to remain competitive."],
-    date: "2026-05-01",
+    date: "2026-05-05T12:23:12Z",
     publisher: { name: "Manila Bulletin", logo: "static/images/logo.png" },
   },
   {
     image: "static/images/image-3.jpg",
     title: "Climate Crisis Pushes Pacific Islands to Relocate",
+    author: "John Doe",
     tag: "Health",
     url: "https://google.com",
     bullets: ["Rising seas now threaten entire island communities daily.", "Governments have launched funded mass-relocation programs.", "Cultural identity is deeply at risk from forced displacement.", "International aid pledges still fall short of what is needed."],
-    date: "2026-04-30",
+    date: "2026-05-04T02:12:13Z",
     publisher: { name: "GMA News", logo: "static/images/logo.png" },
   },
 ];
@@ -58,6 +61,22 @@ let loadError = null;
 const attached = new WeakSet();
 
 /* ── HELPERS ─────────────────────────────────────────────── */
+function convertUtcToUserTimezone(utcDateString) {
+  const date = new Date(utcDateString);
+
+  const pad = (value) => String(value).padStart(2, "0");
+
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  const second = pad(date.getSeconds());
+
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
+
 function hasSupabaseKey() {
   return SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("PASTE_YOUR_SUPABASE_ANON_KEY_HERE");
 }
@@ -298,7 +317,7 @@ function buildCard(article, idx) {
           <div class="card__logo" style="background-image:url(&quot;https://ruludjzcqacclehqkppk.supabase.co/storage/v1/object/public/lathala/images/sources/${article.publisher.id}.webp&quot;)"></div>
           <div class="card__meta">
             <span class="card__pub-name">${escapeHtml(article.publisher.name)}</span>
-            <span class="card__pub-date">${escapeHtml(formatDateForDisplay(article.date))}</span>
+            <span class="card__pub-date">${escapeHtml(article.date)}</span>
           </div>
         </div>
         <div class="card__tag">${escapeHtml(article.tag)}</div>
