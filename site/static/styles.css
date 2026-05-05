@@ -314,7 +314,7 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgb(0, 0, 0) 0%, #0003 40%, #0000 100%);
+  background: linear-gradient(160deg, rgb(0, 0, 0) -25%, #0000 90%, #0000 0);
   pointer-events: none;
 }
 
@@ -340,13 +340,11 @@ button {
 }
 
 .card__logo {
-  width: 36px;
-  height: 36px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   background-size: cover;
   background-color: var(--surface-3);
-  border: 1.5px solid rgba(255, 255, 255, 0.12);
-  flex-shrink: 0;
 }
 
 .card__meta {
@@ -356,21 +354,21 @@ button {
 
 .card__pub-name {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text);
 }
 
 .card__pub-date {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-mid);
   letter-spacing: 0.04em;
 }
 
 .card__tag {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
