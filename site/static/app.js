@@ -394,11 +394,11 @@ function applyStack(instant = false) {
     if (offset === 0) {
       setCardStyle(card, "translate3d(0,0,0) scale(1)", 1, 10, "auto");
     } else if (offset === 1) {
-      setCardStyle(card, "translate3d(0,0,0) scale(0.91)", 0.5, 9, "none");
+      setCardStyle(card, "translate3d(0,0,0) scale(0.8)", 0.5, 9, "none");
     } else if (offset === -1) {
-      setCardStyle(card, "translate3d(0,0,0) scale(0.91)", 0, 8, "none");
+      setCardStyle(card, "translate3d(0,0,0) scale(0.8)", 0, 8, "none");
     } else {
-      setCardStyle(card, "translate3d(0,0,0) scale(0.86)", 0, 0, "none");
+      setCardStyle(card, "translate3d(0,0,0) scale(0)", 0, 0, "none");
     }
 
     if (offset === 0) attachDrag(card);
