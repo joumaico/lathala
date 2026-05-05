@@ -5,7 +5,7 @@
 const SUPABASE_URL = "https://ruludjzcqacclehqkppk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_9ZW1kHjsWy4vkHIYvEd6Mg_vG_hpFnc";
 const ARTICLE_LIMIT = 1000;
-const DEFAULT_IMAGE = "static/images/logo.png";
+const DEFAULT_IMAGE = "static/images/default.png";
 const DEFAULT_PUBLISHER_LOGO = "static/images/logo.png";
 const FIXED_CATEGORIES = ["Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
 
@@ -225,7 +225,7 @@ function init() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <path d="M5 12h14M12 5l7 7-7 7"/>
     </svg>
-    SWIPE TO NEXT
+    SWIPE RIGHT
   `;
   feed.appendChild(hint);
 
