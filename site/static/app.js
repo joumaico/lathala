@@ -49,6 +49,7 @@ const FALLBACK_ARTICLES = [
 const SWIPE_THRESHOLD = 72;
 const RESISTANCE = 0.07;
 const FLY_MS = 260;
+const REVEAL_MS = 420;
 
 /* ── STATE ───────────────────────────────────────────────── */
 let allArticles = [];
@@ -56,6 +57,8 @@ let articles = [];
 let activeIndex = 0;
 let cards = [];
 let rafId = null;
+let revealTimerId = null;
+let revealRun = 0;
 let activeTag = null;
 let isLoading = false;
 let loadError = null;
@@ -183,6 +186,7 @@ async function loadArticles(tag = null) {
   isLoading = true;
   loadError = null;
   renderFeedState("LOADING");
+  updateReadLink();
   updateSidebarDisabledState(true);
 
   try {
@@ -264,6 +268,7 @@ function rebuildFeed() {
   applyStack(true);
   updateProgress();
   updateReadLink();
+  revealActiveCard();
 }
 
 function renderFeedState(message) {
@@ -283,6 +288,51 @@ function renderFeedState(message) {
 function hideFeedState() {
   const state = document.getElementById("feed-state");
   if (state) state.remove();
+}
+
+function revealActiveCard() {
+  const card = cards[activeIndex];
+  if (!card) return;
+
+  revealRun += 1;
+  const currentReveal = revealRun;
+
+  if (revealTimerId) {
+    clearTimeout(revealTimerId);
+    revealTimerId = null;
+  }
+
+  cards.forEach((item, i) => {
+    item.style.transition = "none";
+
+    if (i === activeIndex) {
+      item.style.opacity = "0";
+      item.style.transform = "translate3d(0,14px,0) scale(0.98)";
+      item.style.zIndex = "10";
+      item.style.pointerEvents = "auto";
+      return;
+    }
+
+    item.style.opacity = "0";
+    item.style.transform = "translate3d(0,0,0) scale(0)";
+    item.style.zIndex = "0";
+    item.style.pointerEvents = "none";
+  });
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (currentReveal !== revealRun) return;
+
+      card.style.transition = `transform ${REVEAL_MS}ms cubic-bezier(.25,.46,.45,.94), opacity ${REVEAL_MS}ms ease`;
+      card.style.opacity = "1";
+      card.style.transform = "translate3d(0,0,0) scale(1)";
+    });
+  });
+
+  revealTimerId = setTimeout(() => {
+    if (currentReveal !== revealRun) return;
+    applyStack(true);
+  }, REVEAL_MS + 30);
 }
 
 /* ── BUILD CARD ─────────────────────────────────────────── */
@@ -312,18 +362,19 @@ function buildCard(article, idx) {
 
     <div class="card__content">
       <h2 class="card__title">${escapeHtml(article.title)}</h2>
+
       <div class="card__subtitle">
         <div class="card__divider"></div>
         ${
-          author
+          author || article.publisher?.name
             ? `<div class="card__author">
                 <i class="fa-solid fa-user-pen"></i>
-                <span>${escapeHtml(author)}</span>
-              </div>
-        `
+                <span>${escapeHtml(author || article.publisher?.name)}</span>
+              </div>`
             : ""
         }
       </div>
+
       <div class="carousel">
         <div class="carousel__dot-track">
           ${article.bullets.map((_, i) => `<div class="carousel__dot-pip${i === 0 ? " active" : ""}"></div>`).join("")}
@@ -612,13 +663,20 @@ function updateProgress() {
 /* ── READ ARTICLE LINK ──────────────────────────────────── */
 function updateReadLink() {
   const link = document.getElementById("read-article-link");
-  if (!link) return;
+  const nav = document.querySelector(".bottom-nav");
+  if (!link || !nav) return;
 
-  const article = articles[activeIndex];
+  const article = !isLoading ? articles[activeIndex] : null;
   const url = article ? safeUrl(article.url, "#") : "#";
-  link.href = url;
-  link.classList.toggle("disabled", !article || url === "#");
-  link.setAttribute("aria-disabled", !article || url === "#" ? "true" : "false");
+  const canRead = Boolean(article && url !== "#");
+
+  link.href = canRead ? url : "#";
+  link.classList.toggle("disabled", !canRead);
+  link.setAttribute("aria-disabled", canRead ? "false" : "true");
+  link.tabIndex = canRead ? 0 : -1;
+
+  nav.classList.toggle("is-hidden", !canRead);
+  nav.setAttribute("aria-hidden", canRead ? "false" : "true");
 }
 
 /* ── SIDEBAR ─────────────────────────────────────────────── */
