@@ -393,7 +393,7 @@ button {
 
 .card__title {
   font-family: var(--font-title);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.3;
   color: var(--text);
@@ -402,13 +402,28 @@ button {
   flex-shrink: 0;
 }
 
+.card__subtitle {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .card__divider {
   width: 28px;
   height: 1.5px;
   background: var(--gold);
-  border-radius: 2px;
-  margin-bottom: 14px;
-  flex-shrink: 0;
+}
+
+.card__author {
+  color: var(--gold-bright);
+}
+
+.card__author span {
+  font-size: 14px;
+  font-weight: 900;
+  padding-left: 4px;
+  text-transform: uppercase;
 }
 
 /* =============================================
@@ -543,7 +558,7 @@ button {
 
 .carousel__text {
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.3;
   color: var(--text-mid);

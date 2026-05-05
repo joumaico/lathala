@@ -7,6 +7,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_9ZW1kHjsWy4vkHIYvEd6Mg_vG_hpFnc";
 const DEFAULT_IMAGE = "static/images/default.png";
 const DEFAULT_PUBLISHER_LOGO = "static/images/logo.png";
 const FIXED_CATEGORIES = ["World", "National", "Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
+const AUTHOR_BANNED_STRINGS = ["GMA News"];
 
 /* ── FALLBACK DATA ─────────────────────────────────────────
    This keeps the app usable while the Supabase anon key is not set.
@@ -97,6 +98,18 @@ function getPublisherName(url) {
   }
 }
 
+function cleanAuthor(text) {
+  if (!text) return "";
+
+  let cleaned = text;
+
+  AUTHOR_BANNED_STRINGS.forEach((word) => {
+    cleaned = cleaned.replace(new RegExp(word, "gi"), "");
+  });
+
+  return cleaned.split(",")[0].trim();
+}
+
 function normalizeRpcRow(row) {
   if (row && typeof row === "object" && "get_articles_by_tag" in row) {
     return row.get_articles_by_tag;
@@ -116,6 +129,7 @@ function normalizeArticle(row) {
     date: String(item.date || ""),
     image: safeUrl(item.image, DEFAULT_IMAGE),
     title: String(item.title || "Untitled Article"),
+    author: String(item.author || ""),
     bullets: bullets.length ? bullets : ["No summary bullets are available for this article yet."],
     publisher: {
       id: publisher.id ?? item.publisher_id ?? null,
@@ -168,7 +182,7 @@ async function fetchArticlesByTag(tag) {
 async function loadArticles(tag = null) {
   isLoading = true;
   loadError = null;
-  renderFeedState("Loading articles…");
+  renderFeedState("LOADING");
   updateSidebarDisabledState(true);
 
   try {
@@ -280,6 +294,7 @@ function buildCard(article, idx) {
   const bulletCount = article.bullets.length;
   const image = safeUrl(article.image, DEFAULT_IMAGE).replace(/"/g, "%22");
   const publisherLogo = safeUrl(article.publisher.logo, DEFAULT_PUBLISHER_LOGO).replace(/"/g, "%22");
+  const author = cleanAuthor(article.author);
 
   el.innerHTML = `
     <div class="card__image" style="background-image:url(&quot;${image}&quot;)">
@@ -297,7 +312,18 @@ function buildCard(article, idx) {
 
     <div class="card__content">
       <h2 class="card__title">${escapeHtml(article.title)}</h2>
-      <div class="card__divider"></div>
+      <div class="card__subtitle">
+        <div class="card__divider"></div>
+        ${
+          author
+            ? `<div class="card__author">
+                <i class="fa-solid fa-user-pen"></i>
+                <span>${escapeHtml(author)}</span>
+              </div>
+        `
+            : ""
+        }
+      </div>
       <div class="carousel">
         <div class="carousel__dot-track">
           ${article.bullets.map((_, i) => `<div class="carousel__dot-pip${i === 0 ? " active" : ""}"></div>`).join("")}

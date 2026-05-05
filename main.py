@@ -35,10 +35,10 @@ STRICT STYLE RULES:
 - The headline must not sound like a press release.
 - Extract the article image URL, author’s name, and published date from the <header><meta></header> section only.
   Do not extract any of those data from the <body> section.
-- Convert the article date from the header metadata to UTC using this format: YYYY-MM-DDTHH:MM:SSZ, example: 2026-05-05T07:30:45Z. 
-- For Philippine-based websites, any metadata timestamp labeled “PST” must be interpreted
-  as Philippine Standard Time, UTC+08:00, Asia/Manila, never Pacific Standard Time.
-  For global sources such as Reuters and BBC, do not assume “PST” means Philippine time.
+- Convert the article date from the header metadata to UTC using this format:
+  YYYY-MM-DDTHH:MM:SSZ, example: 2026-05-05T07:30:45Z. For Philippine-based websites, any metadata
+  timestamp labeled “PST” or "+0800" must be interpreted as Philippine Standard Time never
+  Pacific Standard Time. For global sources such as Reuters and BBC, do not assume “PST” means Philippine time.
 
 OUTPUT FORMAT:
 Return valid JSON only.
