@@ -42,6 +42,13 @@ async def load_urls_with_limit(
                 # Optional: let late-rendered content appear.
                 await page.wait_for_timeout(5_000)
 
+                # Remove unwanted tags.
+                await page.evaluate("""
+                () => {
+                    document.querySelectorAll("style, script").forEach(tag => tag.remove());
+                }
+                """)
+
                 html = await page.content()
 
                 results[idx] = {

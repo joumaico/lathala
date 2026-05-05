@@ -7,7 +7,6 @@ const SUPABASE_ANON_KEY = "sb_publishable_9ZW1kHjsWy4vkHIYvEd6Mg_vG_hpFnc";
 const DEFAULT_IMAGE = "static/images/default.png";
 const DEFAULT_PUBLISHER_LOGO = "static/images/logo.png";
 const FIXED_CATEGORIES = ["World", "National", "Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
-const AUTHOR_BANNED_STRINGS = ["GMA News"];
 
 /* ── FALLBACK DATA ─────────────────────────────────────────
    This keeps the app usable while the Supabase anon key is not set.
@@ -99,18 +98,6 @@ function getPublisherName(url) {
   } catch (_) {
     return "Lathala";
   }
-}
-
-function cleanAuthor(text) {
-  if (!text) return "";
-
-  let cleaned = text;
-
-  AUTHOR_BANNED_STRINGS.forEach((word) => {
-    cleaned = cleaned.replace(new RegExp(word, "gi"), "");
-  });
-
-  return cleaned.split(",")[0].trim();
 }
 
 function normalizeRpcRow(row) {
@@ -344,7 +331,6 @@ function buildCard(article, idx) {
   const bulletCount = article.bullets.length;
   const image = safeUrl(article.image, DEFAULT_IMAGE).replace(/"/g, "%22");
   const publisherLogo = safeUrl(article.publisher.logo, DEFAULT_PUBLISHER_LOGO).replace(/"/g, "%22");
-  const author = cleanAuthor(article.author);
 
   el.innerHTML = `
     <div class="card__image" style="background-image:url(&quot;${image}&quot;)">
@@ -366,10 +352,10 @@ function buildCard(article, idx) {
       <div class="card__subtitle">
         <div class="card__divider"></div>
         ${
-          author || article.publisher?.name
+          article.author || article.publisher?.name
             ? `<div class="card__author">
                 <i class="fa-solid fa-user-pen"></i>
-                <span>${escapeHtml(author || article.publisher?.name)}</span>
+                <span>${escapeHtml(article.author || article.publisher?.name)}</span>
               </div>`
             : ""
         }

@@ -33,21 +33,20 @@ STRICT STYLE RULES:
 - Use passive voice only when necessary.
 - The headline must be direct, natural, and 7 or 8 words long.
 - The headline must not sound like a press release.
-- Extract the article image URL, author’s name, and published date from the <header><meta></header> section only.
+- Extract the article image URL and author’s name from the <header><meta></header> section only.
   Do not extract any of those data from the <body> section.
-- Convert the article date from the header metadata to UTC using this format:
-  YYYY-MM-DDTHH:MM:SSZ, example: 2026-05-05T07:30:45Z. For Philippine-based websites, any metadata
-  timestamp labeled “PST” or "+0800" must be interpreted as Philippine Standard Time never
-  Pacific Standard Time. For global sources such as Reuters and BBC, do not assume “PST” means Philippine time.
+  The name of the author must be a person and not the news source.
+  If there is no author, keep it blank.
+- Find the publication date of the article and format it in this manner: YYYY-MM-DDThh:mm:ss+08:00.
 
 OUTPUT FORMAT:
 Return valid JSON only.
 Do not include markdown fences, explanations, comments, or extra text.
 
 {
-    "title": "<headline, 7 or 8 words>",
+    "title": "<headline, 6 or 8 words>",
     "author": "<article author's name>",
-    "date": "<article date>",
+    "date": "<article date and time>",
     "image": "<full image URL of the article>",
     "tag": "<one selected tag>",
     "bullets": [
@@ -153,9 +152,13 @@ def summarize_articles(batch_size=10):
             if not url or not html:
                 continue
 
+            print(f"Fetching: {url}")
+
             article_data = parse_json(flash(ARTICLE_PROMPT + html))
 
             if not isinstance(article_data, dict):
+
+                print(f"Success: {url}")
                 continue
 
             (
@@ -166,11 +169,13 @@ def summarize_articles(batch_size=10):
                 .execute()
             )
 
+            print(f"Success: {url}")
+
             time.sleep(3)
 
 
 def main():
-    collect_article_links()
+    # collect_article_links()
     summarize_articles()
 
 

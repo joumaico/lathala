@@ -423,10 +423,11 @@ button {
 }
 
 .card__author span {
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 12px;
+  font-weight: 700;
   padding-left: 4px;
   text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
 /* =============================================

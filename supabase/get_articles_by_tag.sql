@@ -3,6 +3,7 @@
 --   https://www.gmanetwork.com/news/...       -> gmanetwork.com
 --   https://data.gmanetwork.com/gno/rss/...   -> gmanetwork.com
 --   https://www.example.com.ph/path           -> example.com.ph
+--
 -- select * from public.get_articles_by_tag();
 -- select * from public.get_articles_by_tag('All');
 -- select * from public.get_articles_by_tag('Business');
@@ -61,16 +62,17 @@ drop function if exists public.get_articles_by_tag(text, integer);
 
 
 -- If tag is omitted, null, empty, or "All", this returns all articles
--- from today's Philippine date only.
+-- from the last 3 Philippine calendar days:
+-- today plus the previous 2 days.
 --
 -- Important:
--- The JSON date is stored in UTC format, for example:
---   2026-05-05T15:48:45Z
+-- The JSON date is now stored in Philippine time, for example:
+--   2026-05-06T08:45:30+0800
 --
--- This function does not change the output date.
--- It only converts today's Philippine date range into UTC for filtering.
+-- This function does not convert to UTC.
+-- It filters directly using +0800 Philippine local date bounds.
 --
--- Results are shuffled on every call.
+-- Results are ordered newest first.
 create or replace function public.get_articles_by_tag(
   tag text default null
 )
@@ -78,27 +80,21 @@ returns setof jsonb
 language sql
 volatile
 as $$
-  with ph_today_bounds as (
+  with ph_3_day_bounds as (
     select
-      to_char(
-        (
-          (
-            ((now() at time zone 'Asia/Manila')::date)::timestamp
-            at time zone 'Asia/Manila'
-          ) at time zone 'UTC'
-        ),
-        'YYYY-MM-DD"T"HH24:MI:SS"Z"'
-      ) as start_utc,
+      (
+        to_char(
+          ((now() at time zone 'Asia/Manila')::date - 2)::timestamp,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '+0800'
+      ) as start_local,
 
-      to_char(
-        (
-          (
-            (((now() at time zone 'Asia/Manila')::date + 1)::timestamp)
-            at time zone 'Asia/Manila'
-          ) at time zone 'UTC'
-        ),
-        'YYYY-MM-DD"T"HH24:MI:SS"Z"'
-      ) as end_utc
+      (
+        to_char(
+          ((now() at time zone 'Asia/Manila')::date + 1)::timestamp,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '+0800'
+      ) as end_local
   ),
   source_domains as (
     select
@@ -128,13 +124,13 @@ as $$
       )
     end
   from public.articles as a
-  cross join ph_today_bounds as b
+  cross join ph_3_day_bounds as b
   left join source_domains as s
     on s.domain_name = public.get_domain_name(a.url)
    and s.source_rank = 1
   where
-    a.data ->> 'date' >= b.start_utc
-    and a.data ->> 'date' < b.end_utc
+    a.data ->> 'date' >= b.start_local
+    and a.data ->> 'date' < b.end_local
     and (
       tag is null
       or btrim(tag) = ''
