@@ -175,7 +175,7 @@ def summarize_articles(batch_size=10):
 
 
 def main():
-    # collect_article_links()
+    collect_article_links()
     summarize_articles()
 
 
