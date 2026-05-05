@@ -3,6 +3,9 @@
 --   https://www.gmanetwork.com/news/...       -> gmanetwork.com
 --   https://data.gmanetwork.com/gno/rss/...   -> gmanetwork.com
 --   https://www.example.com.ph/path           -> example.com.ph
+-- select * from public.get_articles_by_tag();
+-- select * from public.get_articles_by_tag('All');
+-- select * from public.get_articles_by_tag('Business');
 create or replace function public.get_domain_name(raw_url text)
 returns text
 language sql
@@ -36,8 +39,7 @@ as $$
     when part_count is null then null
     when part_count <= 2 then host
 
-    -- Common compound public suffixes. PostgreSQL does not include the full
-    -- public suffix list, so add more here if your sources need them.
+    -- Common compound public suffixes.
     when parts[part_count - 1] || '.' || parts[part_count] in (
       'com.ph', 'net.ph', 'org.ph', 'gov.ph', 'edu.ph',
       'co.uk', 'org.uk', 'ac.uk', 'gov.uk',
@@ -52,16 +54,25 @@ as $$
   from labels;
 $$;
 
--- If tag is omitted, null, empty, or "All", this returns all articles.
+
+-- Remove the old version with p_limit.
+drop function if exists public.get_articles_by_tag(text, integer);
+
+
+-- If tag is omitted, null, empty, or "All", this returns all articles
+-- from today's UTC+8 date only.
+-- Results are shuffled on every call.
 create or replace function public.get_articles_by_tag(
-  tag text default null,
-  p_limit integer default 1000
+  tag text default null
 )
 returns setof jsonb
 language sql
-stable
+volatile
 as $$
-  with source_domains as (
+  with current_date_utc8 as (
+    select (now() at time zone 'Asia/Manila')::date as value
+  ),
+  source_domains as (
     select
       s.id,
       s.name,
@@ -89,29 +100,28 @@ as $$
       )
     end
   from public.articles as a
+  cross join current_date_utc8 as d
   left join source_domains as s
     on s.domain_name = public.get_domain_name(a.url)
    and s.source_rank = 1
   where
-    $1 is null
-    or btrim($1) = ''
-    or lower($1) = 'all'
-    or a.data ->> 'tag' = $1
-  order by
-    case
-      when a.data ->> 'date' ~ '^\d{4}-\d{2}-\d{2}$'
-      then (a.data ->> 'date')::date
-      else null
-    end desc nulls last,
-    a.url asc
-  limit least(greatest(coalesce($2, 1000), 0), 1000);
+    a.data ->> 'date' = d.value::text
+    and (
+      tag is null
+      or btrim(tag) = ''
+      or lower(tag) = 'all'
+      or a.data ->> 'tag' = tag
+    )
+  order by random();
 $$;
+
 
 grant execute on function public.get_domain_name(text)
 to anon, authenticated;
 
-grant execute on function public.get_articles_by_tag(text, integer)
+grant execute on function public.get_articles_by_tag(text)
 to anon, authenticated;
+
 
 create index if not exists articles_tag_idx
 on public.articles ((data ->> 'tag'));

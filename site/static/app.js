@@ -4,7 +4,6 @@
 ──────────────────────────────────────────────────────────── */
 const SUPABASE_URL = "https://ruludjzcqacclehqkppk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_9ZW1kHjsWy4vkHIYvEd6Mg_vG_hpFnc";
-const ARTICLE_LIMIT = 1000;
 const DEFAULT_IMAGE = "static/images/default.png";
 const DEFAULT_PUBLISHER_LOGO = "static/images/logo.png";
 const FIXED_CATEGORIES = ["Politics", "Business", "Technology", "Health", "Sports", "Entertainment"];
@@ -152,9 +151,7 @@ async function fetchArticlesByTag(tag) {
     return tag ? fallback.filter((a) => a.tag === tag) : fallback;
   }
 
-  const params = new URLSearchParams({
-    p_limit: String(ARTICLE_LIMIT),
-  });
+  const params = new URLSearchParams();
 
   // No tag means fetch all articles from all tags.
   if (tag && String(tag).trim()) {
