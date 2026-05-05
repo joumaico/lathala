@@ -14,12 +14,12 @@ Using only the transcript provided, create a concise news article summary in JSO
 You must:
 - Write a direct headline.
 - Select the strongest single tag from this list only:
-    Politics, Business, Technology, Health, Sports, Entertainment.
+    World, National, Politics, Business, Technology, Health, Sports, Entertainment.
 - Keep each bullet to one sentence only.
-- Keep each bullet between 20 and 30 words.
+- Keep each bullet between 20 and 25 words.
 - Use only facts supported by the article.
 - Do not invent names, numbers, places, dates, URLs, or image links.
-- If the image URL is not provided in the article, use an empty string.
+- If the image URL is not provided, use an empty string.
 
 STRICT STYLE RULES:
 - Vary sentence openings. Do not start two consecutive bullets with the same structure.
@@ -31,22 +31,25 @@ STRICT STYLE RULES:
 - Do not use en dashes or em dashes.
 - Prefer active voice.
 - Use passive voice only when necessary.
-- Anchor claims with specific numbers, names, and places when they appear in the article.
-- The headline must be direct, natural, and 9 to 11 words long.
+- The headline must be direct, natural, and 7 or 8 words long.
 - The headline must not sound like a press release.
+- Extract the article image URL, author’s name, and published date from the <header><meta></header> section only.
+  Do not extract any of those data from the <body> section.
+- Convert the article date from the header metadata to UTC using this format: example: 2026-05-05T07:30:45Z.
 
 OUTPUT FORMAT:
 Return valid JSON only.
 Do not include markdown fences, explanations, comments, or extra text.
 
 {
+    "title": "<headline, 7 or 8 words>",
+    "author": "<article author's name>",
+    "date": "<article date>",
     "image": "<full image URL of the article>",
-    "title": "<headline, 9 to 11 words>",
     "tag": "<one selected tag>",
     "bullets": [
-        "<one-sentence summary, 20 to 30 words>",
+        "<one-sentence summary, 20 to 25 words>"
     ],
-    "date": "<YYYY-MM-DD>"
 }
 
 ARTICLE:

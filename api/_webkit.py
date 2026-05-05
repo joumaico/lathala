@@ -42,17 +42,7 @@ async def load_urls_with_limit(
                 # Optional: let late-rendered content appear.
                 await page.wait_for_timeout(5_000)
 
-                await page.evaluate(
-                    """
-                    () => {
-                        document
-                            .querySelectorAll('script, style')
-                            .forEach(el => el.remove());
-                    }
-                    """
-                )
-
-                html = await page.locator("body").evaluate("el => el.innerHTML")
+                html = await page.content()
 
                 results[idx] = {
                     "url": url,
