@@ -61,22 +61,6 @@ let loadError = null;
 const attached = new WeakSet();
 
 /* ── HELPERS ─────────────────────────────────────────────── */
-function convertUtcToUserTimezone(utcDateString) {
-  const date = new Date(utcDateString);
-
-  const pad = (value) => String(value).padStart(2, "0");
-
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-
-  const hour = pad(date.getHours());
-  const minute = pad(date.getMinutes());
-  const second = pad(date.getSeconds());
-
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
-}
-
 function hasSupabaseKey() {
   return SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("PASTE_YOUR_SUPABASE_ANON_KEY_HERE");
 }
@@ -111,19 +95,6 @@ function getPublisherName(url) {
   } catch (_) {
     return "Lathala";
   }
-}
-
-function formatDateForDisplay(value) {
-  if (!value) return "";
-
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return String(value);
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 function normalizeRpcRow(row) {
@@ -317,7 +288,7 @@ function buildCard(article, idx) {
           <div class="card__logo" style="background-image:url(&quot;https://ruludjzcqacclehqkppk.supabase.co/storage/v1/object/public/lathala/images/sources/${article.publisher.id}.webp&quot;)"></div>
           <div class="card__meta">
             <span class="card__pub-name">${escapeHtml(article.publisher.name)}</span>
-            <span class="card__pub-date">${escapeHtml(article.date)}</span>
+            <span class="card__pub-date">${escapeHtml(timeago.format(article.date))}</span>
           </div>
         </div>
         <div class="card__tag">${escapeHtml(article.tag)}</div>
