@@ -6,7 +6,7 @@
 ========================================================== */
 const APP_CONFIG = {
   viewport: {
-    maxWidth: 500,
+    gridMinWidth: 500,
     resizeDebounceMs: 120,
   },
 
@@ -80,6 +80,8 @@ const APP_CONFIG = {
     hidden: "is-hidden",
     leaving: "leaving",
     open: "open",
+    gridLayout: "is-grid",
+    stackLayout: "is-stack",
     swiping: "is-swiping",
     dragging: "is-dragging",
     pulling: "is-pulling",

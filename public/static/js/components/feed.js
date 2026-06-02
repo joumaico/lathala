@@ -31,10 +31,18 @@ class FeedComponent {
       return;
     }
 
-    // Sparse array: length === total articles, but only the current card
-    // window contains real DOM nodes. This keeps progress/index logic simple
-    // while preventing thousands of .card elements from staying mounted.
     this.store.cards = new Array(this.store.visibleArticles.length);
+
+    if (this.store.isGridLayout) {
+      this.buildGrid();
+      this.feedChrome.updateProgress();
+      this.readButton.update();
+      this.feedChrome.updateSwipeHint();
+      return;
+    }
+
+    // Stack mode keeps only the current card window mounted. This keeps
+    // progress/index logic simple without retaining every card on phones.
     this.syncCardWindow();
 
     this.cardStack.apply(true);
@@ -66,7 +74,58 @@ class FeedComponent {
     return card;
   }
 
+  buildGrid() {
+    const feed = this.domRegistry.nodes.feed;
+    if (!feed) return;
+
+    const fragment = document.createDocumentFragment();
+
+    this.store.visibleArticles.forEach((article, index) => {
+      const card = this.cardFactory.create(article, index, { disableBulletCarousel: true, disableTitleBreaks: true });
+      const tileLink = this.createGridTileLink(article, card);
+      this.resetCardInlineStyles(card);
+      fragment.appendChild(tileLink);
+      this.store.cards[index] = tileLink;
+    });
+
+    feed.appendChild(fragment);
+  }
+
+  createGridTileLink(article, card) {
+    const url = Urls.safe(article.url, "#");
+    const link = document.createElement("a");
+
+    link.className = "article-tile-link";
+    link.href = url;
+    link.setAttribute("aria-label", `Read article: ${article.title || this.config.messages.untitledArticle}`);
+
+    if (url === "#") {
+      link.classList.add("article-tile-link--disabled");
+      link.setAttribute("aria-disabled", "true");
+      link.tabIndex = -1;
+      link.addEventListener("click", (event) => event.preventDefault());
+    } else {
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+
+    link.appendChild(card);
+    return link;
+  }
+
+  resetCardInlineStyles(card) {
+    if (!card?.style) return;
+
+    card.style.transition = "";
+    card.style.transform = "";
+    card.style.opacity = "";
+    card.style.zIndex = "";
+    card.style.pointerEvents = "";
+    card.style.willChange = "";
+  }
+
   syncCardWindow() {
+    if (this.store.isGridLayout) return;
     if (!this.store.visibleArticles.length) return;
 
     const { start, end } = this.getCardWindowRange();

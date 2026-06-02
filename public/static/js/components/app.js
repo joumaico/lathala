@@ -28,7 +28,7 @@ class AppController {
     });
 
     this.viewport = new ViewportGate(config, this.store, this.domRegistry, {
-      onAllowed: () => this.initMobileApp(),
+      onAllowed: (state) => this.initApp(state),
       onBeforeBlocked: () => this.sidebar.close(),
     });
   }
@@ -37,8 +37,19 @@ class AppController {
     this.viewport.boot();
   }
 
-  initMobileApp() {
-    if (this.store.isInitialized || !this.store.isViewportAllowed) return;
+  initApp(state = {}) {
+    if (this.store.isInitialized) {
+      if (state.layoutChanged && !this.store.isLoading) {
+        this.domRegistry.cache();
+        this.sidebar.close();
+        this.feed.rebuild();
+        this.sidebar.render();
+      }
+
+      return;
+    }
+
+    if (!this.store.isViewportAllowed) return;
 
     this.domRegistry.cache();
 

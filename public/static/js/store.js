@@ -30,6 +30,7 @@ class AppStore {
     this.isInitialized = false;
     this.isLoading = false;
     this.isViewportAllowed = false;
+    this.isGridLayout = false;
     this.loadError = null;
     this.isDraggingCard = false;
   }

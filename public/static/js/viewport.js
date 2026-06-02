@@ -35,24 +35,29 @@ class ViewportGate {
   }
 
   sync() {
-    if (!this.isAllowed()) {
-      this.blockApp();
-      return;
-    }
-
     this.allowApp();
   }
 
-  isAllowed() {
-    return window.innerWidth < this.config.viewport.maxWidth;
+  isGridLayout() {
+    const breakpoint = Number(this.config.viewport.gridMinWidth) || 500;
+    return window.innerWidth >= breakpoint;
   }
 
   allowApp() {
+    const previousLayout = this.store.isGridLayout;
     this.store.isViewportAllowed = true;
     this.removeNoContentNode();
 
     if (!this.mountAppNode()) return;
-    this.callbacks.onAllowed?.();
+
+    const app = Dom.$(this.config.selectors.app);
+    const isGridLayout = this.isGridLayout();
+    this.store.isGridLayout = isGridLayout;
+
+    app?.classList.toggle(this.config.classes.gridLayout, isGridLayout);
+    app?.classList.toggle(this.config.classes.stackLayout, !isGridLayout);
+
+    this.callbacks.onAllowed?.({ layoutChanged: previousLayout !== isGridLayout });
   }
 
   blockApp() {

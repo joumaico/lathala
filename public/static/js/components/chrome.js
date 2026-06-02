@@ -72,7 +72,7 @@ class FeedChromeComponent {
 
     const total = this.store.visibleArticles.length;
     const canSwipeLeftToNext = this.store.activeIndex < total - 1;
-    const shouldShow = Boolean(this.store.isViewportAllowed && !this.store.isLoading && total > 1 && canSwipeLeftToNext);
+    const shouldShow = Boolean(this.store.isViewportAllowed && !this.store.isGridLayout && !this.store.isLoading && total > 1 && canSwipeLeftToNext);
 
     hint.classList.toggle(this.config.classes.hidden, !shouldShow);
     hint.setAttribute("aria-hidden", shouldShow ? "false" : "true");

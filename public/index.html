@@ -16,16 +16,7 @@
     <title>Lathala</title>
   </head>
   <body>
-    <!-- Wide-viewport fallback. app.js removes this node below 500px and restores it at 500px or wider. -->
-    <div id="mask">
-      <div class="title">
-        <i class="fa-solid fa-mobile-screen"></i>
-        <span>Mobile Only</span>
-      </div>
-      <p>This website works only on mobile devices.</p>
-    </div>
-
-    <!-- Mobile app shell. app.js removes this node when the viewport is 500px or wider. -->
+    <!-- Responsive app shell. Small screens use a card stack; tablet and desktop use a tile grid. -->
     <div id="app" class="is-booting">
       <!-- Initial loading screen shown while resources, API data, and image preloading start. -->
       <div class="app-loader" id="app-loader" role="status" aria-live="polite" aria-label="Loading Lathala">

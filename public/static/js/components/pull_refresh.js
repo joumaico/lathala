@@ -216,7 +216,7 @@ class PullRefreshComponent {
   }
 
   canStart(event) {
-    if (!this.store.isViewportAllowed || this.store.isLoading || this.state.isRefreshing) return false;
+    if (!this.store.isViewportAllowed || this.store.isGridLayout || this.store.isLoading || this.state.isRefreshing) return false;
     if (event.pointerType === "mouse" && event.button !== 0) return false;
 
     const target = event.target;

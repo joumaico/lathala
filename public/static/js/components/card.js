@@ -9,11 +9,11 @@ class ArticleCardFactory {
     this.repository = repository;
   }
 
-  create(article, index) {
+  create(article, index, options = {}) {
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.idx = String(index);
-    card.innerHTML = this.renderMarkup(article);
+    card.innerHTML = this.renderMarkup(article, options);
 
     const image = Dom.$(this.config.selectors.cardImage, card);
     const logo = Dom.$(this.config.selectors.cardLogo, card);
@@ -21,11 +21,11 @@ class ArticleCardFactory {
     if (image) image.style.backgroundImage = `url("${Urls.css(Urls.safe(article.image, this.config.assets.defaultImage))}")`;
     if (logo) logo.style.backgroundImage = `url("${Urls.css(this.repository.getPublisherLogoUrl(article.publisher))}")`;
 
-    new CarouselComponent(this.config, card, article.bullets.length).bind();
+    if (!options.disableBulletCarousel) new CarouselComponent(this.config, card, article.bullets.length).bind();
     return card;
   }
 
-  renderMarkup(article) {
+  renderMarkup(article, options = {}) {
     return `
       <div class="card__image">
         <div class="card__publisher">
@@ -41,7 +41,7 @@ class ArticleCardFactory {
       </div>
 
       <div class="card__content">
-        <h2 class="card__title">${Text.twoLineTitle(Text.toTitleCase(article.title))}</h2>
+        <h2 class="card__title">${this.renderTitle(article, options)}</h2>
 
         <div class="card__subtitle">
           <div class="card__divider"></div>
@@ -49,13 +49,32 @@ class ArticleCardFactory {
           ${this.renderAuthors(article)}
         </div>
 
-        <div class="carousel">
-          <div class="carousel__dot-track">
-            ${this.renderPips(article.bullets.length)}
-          </div>
-          <div class="carousel__track">
-            ${this.renderBullets(article.bullets)}
-          </div>
+        ${this.renderSummary(article, options)}
+      </div>
+    `;
+  }
+
+  renderTitle(article, options = {}) {
+    const title = Text.toTitleCase(article.title || this.config.messages.untitledArticle);
+    return options.disableTitleBreaks ? Text.escape(title) : Text.twoLineTitle(title);
+  }
+
+  renderSummary(article, options = {}) {
+    if (options.disableBulletCarousel) {
+      return `
+        <ul class="article-bullets">
+          ${this.renderBullets(article.bullets)}
+        </ul>
+      `;
+    }
+
+    return `
+      <div class="carousel">
+        <div class="carousel__dot-track">
+          ${this.renderPips(article.bullets.length)}
+        </div>
+        <div class="carousel__track">
+          ${this.renderCarouselItems(article.bullets)}
         </div>
       </div>
     `;
@@ -91,6 +110,16 @@ class ArticleCardFactory {
   }
 
   renderBullets(bullets) {
+    return bullets
+      .map(
+        (bullet) => `
+          <li class="article-bullets__item">${Text.escape(bullet)}</li>
+        `,
+      )
+      .join("");
+  }
+
+  renderCarouselItems(bullets) {
     return bullets
       .map(
         (bullet) => `

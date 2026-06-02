@@ -16,7 +16,7 @@ class ReadButtonComponent {
 
     const article = !this.store.isLoading ? this.store.visibleArticles[this.store.activeIndex] : null;
     const url = article ? Urls.safe(article.url, "#") : "#";
-    const canRead = Boolean(this.store.isViewportAllowed && article && url !== "#");
+    const canRead = Boolean(this.store.isViewportAllowed && !this.store.isGridLayout && article && url !== "#");
 
     readArticleLink.href = canRead ? url : "#";
     readArticleLink.classList.toggle(this.config.classes.disabled, !canRead);
